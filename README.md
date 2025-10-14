@@ -86,6 +86,7 @@ For more detailed demonstration, please see: [Demo](https://github.com/JianqiaoM
 ## Reference
 
 [1] Little, Max A., and Reham Badawy. "Causal bootstrapping." arXiv preprint arXiv:1910.09648 (2019).
+
 [2] Mao, Jianqiao. "mechanism-learn" Github repo. https://github.com/JianqiaoMao/mechanism-learn, https://zenodo.org/records/17306651.
 
 
