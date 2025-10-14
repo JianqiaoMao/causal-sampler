@@ -78,7 +78,7 @@ For more detailed demonstration, please see: [Demo](https://github.com/JianqiaoM
     - [x] source code development
     - [x] Toy example experiments
     - [ ] Interface design and development
-- Diffusion-based causal sample generation
+- Denoising Diffusion Probabilistic Models (DDPM) based causal sample generation
     - [x] source code development
     - [ ] Toy example experiments
     - [ ] Interface design and development
