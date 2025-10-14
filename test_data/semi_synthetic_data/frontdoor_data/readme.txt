@@ -1,0 +1,1 @@
+The semi-synthetic background-MNIST data is too large to upload to GitHub. Please run "semi_synthetic_data_gen.py" in this dir.
