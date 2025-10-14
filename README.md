@@ -68,6 +68,21 @@ The current version provides two causal sampling techniques:
 
 For more detailed demonstration, please see: [Demo](https://github.com/JianqiaoMao/causal-sampler/tree/main/Demo).
 
+## Update plan
+
+- Causal Dirichlet Process Mixture Models
+    - [x] source code development
+    - [x] Toy example experiments
+    - [ ] Interface design and development
+- Causal-aware Markov chain Monte Carlo-based Block Gibbs sampling
+    - [x] source code development
+    - [x] Toy example experiments
+    - [ ] Interface design and development
+- Diffusion-based causal sample generation
+    - [x] source code development
+    - [ ] Toy example experiments
+    - [ ] Interface design and development
+
 ## Reference
 
 [1] Little, Max A., and Reham Badawy. "Causal bootstrapping." arXiv preprint arXiv:1910.09648 (2019).
