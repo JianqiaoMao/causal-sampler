@@ -113,8 +113,7 @@ def compute_causal_weight(causal_graph,
                                 {"norm": norm})
     else:
         _kernel_intv = None
-    
-    N = data_dict[effect_var_name].shape[0]
+    N = list(data_dict.values())[0].shape[0]
     w_func, _ = be.build_weight_function(intv_prob = id_formular,
                                          dist_map = dist_map, 
                                          N = N, 
@@ -359,7 +358,7 @@ class CausalGMMSampler:
         self.est_method = est_method
         self.est_kwargs = est_kwargs
         
-        N = data_dict[effect_var_name].shape[0]
+        N = list(self.data_dict.values())[0].shape[0]
         self.deconf_X = np.zeros((data_dict[effect_var_name].shape[1],N))
         self.deconf_Y = np.zeros((1,N))
         
@@ -468,12 +467,12 @@ class CausalGMMSampler:
         if random_seed is not None:
             np.random.seed(random_seed)
         
-        self.deconf_X, self.deconf_Y = self.cwgmm_model.sample(n_samples)
-        sample_idx = np.arange(self.deconf_X.shape[0])
+        deconf_X, deconf_Y = self.cwgmm_model.sample(n_samples)
+        sample_idx = np.arange(deconf_X.shape[0])
         if shuffle:
             np.random.shuffle(sample_idx)
-        self.deconf_X = self.deconf_X[sample_idx]
-        self.deconf_Y = self.deconf_Y[sample_idx]
+        self.deconf_X = deconf_X[sample_idx]
+        self.deconf_Y = deconf_Y[sample_idx]
         if return_samples:
             return self.deconf_X, self.deconf_Y
     
