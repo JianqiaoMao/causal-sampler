@@ -7,6 +7,10 @@ import causal_sampler.gmmSampler as gmms
 import causal_sampler.utils as utils
 from causalbootstrapping import workflows as wf
 from causalbootstrapping import backend as be
+from causalbootstrapping.utils import weight_func_parse
+from causalbootstrapping.expr_extend import weightExpr
+import grapl.dsl as dsl
+import warnings
 import numpy as np
 try:
     from IPython import get_ipython
@@ -27,6 +31,7 @@ def compute_causal_weight(causal_graph,
                           effect_var_name, 
                           intv_values,
                           data_dict, 
+                          id_formular = None,
                           est_method = "histogram",
                           kernel = "Kronecker delta",
                           **kwargs):
@@ -70,11 +75,24 @@ def compute_causal_weight(causal_graph,
     if est_method not in ["histogram", "kde", "gmm", "multinorm", "kmeans"]:
         raise ValueError("est_method should be 'histogram', 'kde', 'gmm', 'multinorm' or 'kmeans'.")
 
-    weight_func_lam, weight_func_expr = wf.general_cb_analysis(causal_graph = causal_graph, 
-                                                                effect_var_name = effect_var_name, 
-                                                                cause_var_name = cause_var_name, 
-                                                                info_print= False)
-    
+    if id_formular is None:
+        grapl_obj = dsl.GraplDSL()
+        G = grapl_obj.readgrapl(causal_graph)
+        id_formular, identifiable = be.id(Y = set(effect_var_name),
+                                          X = set(cause_var_name),
+                                          G = G)
+    else:
+        warnings.warn("Using provided identification equation. Ensure it is valid and compatible. Parameters causal_graph, effect_var_name, cause_var_name are ignored.")
+    w_nom, w_denom, kernel_flag, valid_id_eqn = weight_func_parse(id_formular)
+    if not valid_id_eqn:
+        raise ValueError("The given identification equation is not valid to derive valid causal weight expression.")
+    weight_func_expr = weightExpr(
+    w_nom=w_nom,
+    w_denom=w_denom,
+    cause_var=cause_var_name,
+    kernel_flag=kernel_flag
+    )
+
     dist_map = utils.build_dist_map(weight_func_expr = weight_func_expr,
                                     data = data_dict,
                                     cause_var_name = cause_var_name,
@@ -97,10 +115,11 @@ def compute_causal_weight(causal_graph,
         _kernel_intv = None
     
     N = data_dict[effect_var_name].shape[0]
-    w_func, _ = weight_func_lam(dist_map = dist_map, 
-                                N = N, 
-                                kernel = _kernel_intv,
-                                cause_intv_name_map = {cause_var_name: intv_var_name})
+    w_func, _ = be.build_weight_function(intv_prob = id_formular,
+                                         dist_map = dist_map, 
+                                         N = N, 
+                                         kernel = _kernel_intv,
+                                         cause_intv_name_map = {cause_var_name: intv_var_name})
 
     causal_weights = np.zeros((N, len(intv_values)))
     for i, intv_value in enumerate(intv_values):
@@ -121,10 +140,10 @@ class CausalBootstrapSampler:
         The name of the cause variable.
     effect_var_name: str
         The name of the effect variable.
-    data_dict: dict
-        A dictionary containing the data. The keys are the variable names and the values are the corresponding data arrays.
     intv_values: list or np.ndarray of shape (n_intv,)
         The intervention values.
+    data_dict: dict
+        A dictionary containing the data. The keys are the variable names and the values are the corresponding data arrays.
     est_method: str, Default: "histogram"
         The method for estimating the distribution. Options are "histogram", "kde", "gmm", "multinorm", "kmeans".
     **est_kwargs: additional arguments for the distribution estimation.
@@ -139,8 +158,9 @@ class CausalBootstrapSampler:
                  causal_graph,
                  cause_var_name,
                  effect_var_name,
-                 data_dict,
                  intv_values,
+                 data_dict,
+                 id_formular = None,
                  est_method = "histogram",
                  **est_kwargs
                  ):
@@ -151,6 +171,9 @@ class CausalBootstrapSampler:
         
         self.data_dict = data_dict
         self.intv_values = intv_values
+        self.id_formular = id_formular
+        if id_formular is not None:
+            warnings.warn("Using provided identification equation. Ensure it is valid and compatible. Parameters causal_graph, effect_var_name, cause_var_name are ignored.")
         self.est_method = est_method
         self.est_kwargs = est_kwargs
 
@@ -204,10 +227,23 @@ class CausalBootstrapSampler:
         if random_seed is not None:
             np.random.seed(random_seed)
 
-        weight_func_lam, weight_func_expr = wf.general_cb_analysis(causal_graph = self.causal_graph, 
-                                                                   effect_var_name = self.effect_var_name, 
-                                                                   cause_var_name = self.cause_var_name, 
-                                                                   info_print= False)
+        if self.id_formular is None:
+            grapl_obj = dsl.GraplDSL()
+            G = grapl_obj.readgrapl(self.causal_graph)
+            id_formular, identifiable = be.id(Y = set(self.effect_var_name),
+                                              X = set(self.cause_var_name),
+                                              G = G)
+            self.id_formular = id_formular
+
+        w_nom, w_denom, kernel_flag, valid_id_eqn = weight_func_parse(self.id_formular)
+        if not valid_id_eqn:
+            raise ValueError("The given identification equation is not valid to derive valid causal weight expression.")
+        weight_func_expr = weightExpr(
+        w_nom=w_nom,
+        w_denom=w_denom,
+        cause_var=self.cause_var_name,
+        kernel_flag=kernel_flag
+        )
         
         dist_map = utils.build_dist_map(weight_func_expr = weight_func_expr,
                                         data = self.data_dict,
@@ -228,19 +264,24 @@ class CausalBootstrapSampler:
                         {"norm": norm}) 
         else:
             _kernel_intv = None
-            
+        
+        N = list(self.data_dict.values())[0].shape[0]
+        
+        w_func, _ = be.build_weight_function(intv_prob = id_formular,
+                                             dist_map = dist_map, 
+                                             N = N, 
+                                             kernel = _kernel_intv,
+                                             cause_intv_name_map = {self.cause_var_name: self.intv_var_name})        
+        
         cb_data = {}
         pbar = tqdm(enumerate(self.intv_values), total = len(self.intv_values), desc = "CB Resampling", disable = not show_intv_progress_bar)
         for i, intv_value in pbar:
-            cb_data_i = wf.general_causal_bootstrapping_simu(weight_func_lam = weight_func_lam,
-                                                             dist_map = dist_map,
-                                                             data = self.data_dict,
-                                                             cause_intv_name_map = {self.cause_var_name: self.intv_var_name},
-                                                             intv_dict = {self.intv_var_name: intv_value},
-                                                             n_sample = n_samples[i],
-                                                             kernel = _kernel_intv,
-                                                             random_state=random_seed,
-                                                             mode = cb_mode)
+            cb_data_i, _ = be.simu_bootstrapper(data = self.data_dict, 
+                                                w_func = w_func, 
+                                                intv_dict = {self.intv_var_name: intv_value}, 
+                                                n_sample = n_samples[i], 
+                                                mode = cb_mode, 
+                                                random_state = random_seed)
             for key in cb_data_i:
                 if i == 0:
                     cb_data[key] = cb_data_i[key]
@@ -304,6 +345,7 @@ class CausalGMMSampler:
                  effect_var_name, 
                  intv_values,
                  data_dict, 
+                 id_formular = None,
                  est_method = "histogram",
                  **est_kwargs):
         self.data_dict = data_dict
@@ -313,6 +355,7 @@ class CausalGMMSampler:
         
         self.intv_values = intv_values
         self.causal_graph = causal_graph
+        self.id_formular = id_formular
         self.est_method = est_method
         self.est_kwargs = est_kwargs
         
@@ -390,6 +433,7 @@ class CausalGMMSampler:
                                                         effect_var_name = self.effect_var_name,
                                                         intv_values = self.intv_values,
                                                         data_dict = self.data_dict,
+                                                        id_formular = self.id_formular,
                                                         est_method = self.est_method,
                                                         kernel = weight_kernel,
                                                         **kwargs)

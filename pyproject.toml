@@ -4,9 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "causal-sampler"
-version = "0.0.1"
+version = "0.0.2"
 description = "causal-sampler is a python package that integrates multiple causal sampling techniques, e.g., causal bootstrapping and causally weighted Gaussian Mixture Models, offering standardized pipeline and interfaces."
 requires-python = ">=3.9"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
 authors = [{name="Jianqiao Mao", email="jxm1417@student.bham.ac.uk"}]
 urls = {"Homepage" = "https://github.com/JianqiaoMao/causal-sampler"}
 dependencies = [
