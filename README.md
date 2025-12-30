@@ -89,7 +89,9 @@ For more detailed demonstration, please see: [Demo](https://github.com/JianqiaoM
 
 [1] Little, Max A., and Reham Badawy. "Causal bootstrapping." arXiv preprint arXiv:1910.09648 (2019).
 
-[2] Mao, Jianqiao. "mechanism-learn" Github repo. https://github.com/JianqiaoMao/mechanism-learn, https://zenodo.org/records/17306651.
+[2] Mao, Jianqiao, and Max A. Little. "Mechanism learning: Reverse causal inference in the presence of multiple unknown confounding through front-door causal bootstrapping." arXiv preprint arXiv:2410.20057 (2024).
+
+[3] Mao, Jianqiao. "mechanism-learn" Github repo. https://github.com/JianqiaoMao/mechanism-learn, https://zenodo.org/records/17306651.
 
 
 
